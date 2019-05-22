@@ -1,1 +1,4 @@
 _log
+*.o
+recvCSI/recvCSI
+sendData/sendData
