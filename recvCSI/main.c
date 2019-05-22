@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 
     fd = open_csi_device();
     if (fd < 0){
-        perror("Failed to open the device...");
+        perror("Failed to open the CSI device...");
         return errno;
     }
     
