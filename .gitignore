@@ -2,3 +2,4 @@ _*
 *.o
 recvCSI/recvCSI
 sendData/sendData
+*.si4project
