@@ -1,6 +1,6 @@
 #INCLUDE_DIR=$(TOOLCHAIN_DIR)/usr/include
 OBJS=csi_fun.o main.o
-CC=mips-openwrt-linux-gcc
+CC=/work/Atheros_CSI_tool_OpenWRT_src/staging_dir/toolchain-mips_24kc_gcc-7.3.0_musl/bin/mips-openwrt-linux-musl-gcc
 
 CFLAGS= -std=gnu99
 
