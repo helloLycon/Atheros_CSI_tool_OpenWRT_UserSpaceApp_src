@@ -17,6 +17,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <linux/socket.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -43,11 +46,35 @@ void sig_handler(int signo)
         quit = 1;
 }
 
+int connectServer(const char *ip, int port) {
+    int fd;
+    struct sockaddr_in servAddr;
+    bzero(&servAddr, sizeof(servAddr));
+    servAddr.sin_family = AF_INET;
+    servAddr.sin_port = htons(port);
+    if(inet_pton(AF_INET, ip, &servAddr.sin_addr) < 0) {
+        perror("inet_pton");
+        return -1;
+    }
+
+    if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("socket");
+        return -1;
+    }
+    if(connect(fd, (struct sockaddr *)&servAddr, sizeof(servAddr))<0) {
+        perror("connect");
+        return -1;
+    }
+    printf("succeed to connect %s:%d.\n", ip, port);
+    return fd;
+}
+
 int main(int argc, char* argv[])
 {
     FILE*       fp;
     int         fd;
     int         i;
+    int         cliFd = 0;
     int         total_msg_cnt,cnt;
     int         log_flag;
     unsigned char endian_flag;
@@ -61,11 +88,11 @@ int main(int argc, char* argv[])
          * you need to specify the name of the output file
          */
         log_flag  = 0;
-        printf("/**************************************/\n");
-        printf("/*   Usage: recv_csi <output_file>    */\n");
-        printf("/**************************************/\n");
+        printf("/***************************************************/\n");
+        printf("/*   Usage: recv_csi [output_file] [servIp:port]   */\n");
+        printf("/***************************************************/\n");
     }
-    if (2 == argc){
+    if (2 <= argc){
         fp = fopen(argv[1],"w");
         if (!fp){
             printf("Fail to open <output_file>, are you root?\n");
@@ -73,9 +100,14 @@ int main(int argc, char* argv[])
             return 0;
         }   
     }
-    if (argc > 2){
-        printf(" Too many input arguments !\n");
-        return 0;
+    if (argc >= 3) {
+        char tmp[32];
+        strcpy(tmp, argv[2]);
+        *strchr(tmp, ':') = 0;
+        cliFd = connectServer(tmp, atoi(strchr(argv[2], ':')+1));
+        if(cliFd < 0) {
+            exit(1);
+        }
     }
 
     fd = open_csi_device();
@@ -125,6 +157,11 @@ int main(int argc, char* argv[])
                 buf_len = csi_status->buf_len;
                 fwrite(&buf_len,1,2,fp);
                 fwrite(buf_addr,1,buf_len,fp);
+            }
+            if(cliFd > 0) {
+                buf_len = csi_status->buf_len;
+                write(cliFd, &buf_len, sizeof(buf_len));
+                write(cliFd, buf_addr, buf_len);
             }
         }
     }
