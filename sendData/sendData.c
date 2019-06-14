@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 
     if(argc > 3) {
         if( !strncmp("inf", argv[3], 3) ) {
-            printf("Infiniute packets.\n");
+            printf("Infinite packets.\n");
             infinite = 1;
         } else {
             Cnt = atoi(argv[3]);
