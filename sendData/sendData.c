@@ -45,6 +45,7 @@
  
 int main(int argc, char *argv[])
 {
+	int interval, infinite;
 	int     sockfd;
     	int     i;
 	struct  ifreq if_idx;
@@ -59,8 +60,8 @@ int main(int argc, char *argv[])
 	
     if (argc == 1)
     {
-        printf("Usage:   %s ifName DstMacAddr NumOfPacketToSend\n",argv[0]);
-        printf("Example: %s wlan0 00:7F:5D:3E:4A 100\n",argv[0]);
+        printf("Usage:   %s ifName DstMacAddr NumOfPacketToSend/infinite Interval(ms)\n",argv[0]);
+        printf("Example: %s wlan0 00:7F:5D:3E:4A 100 100\n",argv[0]);
         exit(0);
     }
 
@@ -86,11 +87,25 @@ int main(int argc, char *argv[])
         DstAddr[5] = DEFAULT_DEST_MAC5;
     }
 
-    if(argc > 3)
-        Cnt = atoi(argv[3]);
-    else
+    if(argc > 3) {
+        if( !strncmp("inf", argv[3], 3) ) {
+            printf("Infiniute packets.\n");
+            infinite = 1;
+        } else {
+            Cnt = atoi(argv[3]);
+            infinite = 0;
+        }
+    }
+    else {
         Cnt = 1;
-	
+    }
+
+    if(argc > 4) {
+        interval = atoi(argv[4]);
+        printf("interval = %d ms\n", interval);
+    } else {
+        interval = 0;
+    }
  
 	/* Open RAW socket to send on */
 	if ((sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) == -1) {
@@ -161,14 +176,16 @@ int main(int argc, char *argv[])
 	socket_address.sll_addr[5] = DstAddr[5];
  
 	/* Send packet */
-    for(;Cnt>0;Cnt--)
+    for(;infinite || Cnt>0;Cnt--)
     {
         /* you set the time interval between two transmitting packets 
          * for example, here we set it to 50 microseconds
          * set to 0 if you don't need it
          */
-        if (usleep(50) == -1){
-            printf("sleep failed\n");
+        if(interval) {
+            usleep(interval*1000);
+        } else {
+            usleep(50);
         }
         if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0){
             printf("Send failed\n");
